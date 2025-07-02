@@ -23,7 +23,7 @@ const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
 async function fetchImageForQuery(query: string): Promise<string> {
   if (!UNSPLASH_ACCESS_KEY) {
-    console.error('Unsplash API key is missing.');
+    console.error('Unsplash API key is missing. Please set VITE_UNSPLASH_ACCESS_KEY in your .env.local file.');
     // Return a placeholder image if the key is missing
     return `https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2`;
   }
@@ -35,6 +35,7 @@ async function fetchImageForQuery(query: string): Promise<string> {
       )}&per_page=1&client_id=${UNSPLASH_ACCESS_KEY}`
     );
     if (!response.ok) {
+      console.error(`Unsplash API error: ${response.status} - ${response.statusText}`);
       throw new Error(`Unsplash API error: ${response.statusText}`);
     }
     const data = await response.json();

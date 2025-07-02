@@ -4,3 +4,7 @@
   padding: 2rem;
   text-align: center;
 }
+
+.exporting .absolute.top-4.right-4.z-10 {
+  display: none;
+}

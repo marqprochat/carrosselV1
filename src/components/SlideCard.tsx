@@ -1,7 +1,9 @@
+import { useRef } from 'react';
 import { Rnd } from 'react-rnd';
 import { Card, CardContent } from '@/components/ui/card';
 import { AspectRatio } from './ui/aspect-ratio';
 import { Slide } from '@/types/slide';
+import { ExportButton } from './ExportButton';
 
 interface SlideCardProps {
   slide: Slide;
@@ -23,13 +25,15 @@ function hexToRgba(hex: string, opacity: number): string {
 }
 
 export function SlideCard({ slide, onUpdate }: SlideCardProps) {
+  const slideRef = useRef<HTMLDivElement>(null);
   const textBackground = hexToRgba(
     slide.backgroundColor,
     slide.backgroundOpacity
   );
 
   return (
-    <Card className="overflow-hidden h-full shadow-lg border-0">
+    <Card ref={slideRef} className="overflow-hidden h-full shadow-lg border-0 relative">
+      <ExportButton slideId={String(slide.id)} ref={slideRef} />
       <CardContent className="p-0 h-full">
         <AspectRatio ratio={1 / 1} className="bg-muted relative">
           <img
