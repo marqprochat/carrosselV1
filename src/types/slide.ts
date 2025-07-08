@@ -11,3 +11,9 @@ export type Slide = {
   position: { x: number; y: number };
   size: { width: number | string; height: number | string };
 };
+
+export type AspectRatio = {
+  label: string;
+  value: number;
+  name: string;
+};
