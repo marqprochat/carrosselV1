@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "./ui/separator"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { ImagePicker } from "./ImagePicker"
+import { ImageUrlExtractor } from "./ImageUrlExtractor"
 import { Slide, AspectRatio } from "@/types/slide"
 import { Slider } from "./ui/slider"
 
@@ -40,6 +41,8 @@ interface EditingPanelProps {
   aspectRatio: AspectRatio
   onAspectRatioChange: (aspectRatio: AspectRatio) => void
   slideRefs?: React.RefObject<HTMLDivElement>[]
+  slideCount: number
+  onSlideCountChange: (count: number) => void
 }
 
 const editFormSchema = z.object({
@@ -51,15 +54,39 @@ const editFormSchema = z.object({
   color: z.string(),
   backgroundColor: z.string(),
   backgroundOpacity: z.coerce.number().min(0).max(1),
+  imageScale: z.coerce.number().min(0.1).max(5),
+  imageX: z.coerce.number(),
+  imageY: z.coerce.number(),
+  imageRotation: z.coerce.number().min(-180).max(180),
 })
 
 const fonts = [
+  { name: "Anton", value: "Anton, sans-serif" },
+  { name: "Bebas Neue", value: "Bebas Neue, sans-serif" },
+  { name: "Crimson Text", value: "Crimson Text, serif" },
+  { name: "DM Sans", value: "DM Sans, sans-serif" },
+  { name: "Dancing Script", value: "Dancing Script, cursive" },
+  { name: "Fira Sans", value: "Fira Sans, sans-serif" },
   { name: "Inter", value: "Inter, sans-serif" },
-  { name: "Poppins", value: "Poppins, sans-serif" },
-  { name: "Roboto", value: "Roboto, sans-serif" },
-  { name: "Montserrat", value: "Montserrat, sans-serif" },
-  { name: "Playfair Display", value: "Playfair Display, serif" },
+  { name: "Karla", value: "Karla, sans-serif" },
+  { name: "Lato", value: "Lato, sans-serif" },
+  { name: "Libre Baskerville", value: "Libre Baskerville, serif" },
   { name: "Merriweather", value: "Merriweather, serif" },
+  { name: "Montserrat", value: "Montserrat, sans-serif" },
+  { name: "Nunito", value: "Nunito, sans-serif" },
+  { name: "Open Sans", value: "Open Sans, sans-serif" },
+  { name: "Oswald", value: "Oswald, sans-serif" },
+  { name: "PT Sans", value: "PT Sans, sans-serif" },
+  { name: "Pacifico", value: "Pacifico, cursive" },
+  { name: "Playfair Display", value: "Playfair Display, serif" },
+  { name: "Poppins", value: "Poppins, sans-serif" },
+  { name: "Quicksand", value: "Quicksand, sans-serif" },
+  { name: "Raleway", value: "Raleway, sans-serif" },
+  { name: "Roboto", value: "Roboto, sans-serif" },
+  { name: "Rubik", value: "Rubik, sans-serif" },
+  { name: "Source Sans Pro", value: "Source Sans Pro, sans-serif" },
+  { name: "Ubuntu", value: "Ubuntu, sans-serif" },
+  { name: "Work Sans", value: "Work Sans, sans-serif" },
 ]
 
 const aspectRatios: AspectRatio[] = [
@@ -78,6 +105,8 @@ export function EditingPanel({
   aspectRatio,
   onAspectRatioChange,
   slideRefs,
+  slideCount,
+  onSlideCountChange,
 }: EditingPanelProps) {
   const activeSlide = slides[currentSlideIndex]
   const [isImagePickerOpen, setIsImagePickerOpen] = useState(false)
@@ -94,6 +123,10 @@ export function EditingPanel({
       color: "#FFFFFF",
       backgroundColor: "#000000",
       backgroundOpacity: 0.5,
+      imageScale: 1,
+      imageX: 0,
+      imageY: 0,
+      imageRotation: 0,
     },
   })
 
@@ -110,6 +143,10 @@ export function EditingPanel({
         color: activeSlide.color,
         backgroundColor: activeSlide.backgroundColor,
         backgroundOpacity: activeSlide.backgroundOpacity,
+        imageScale: activeSlide.imageScale || 1,
+        imageX: activeSlide.imageX || 0,
+        imageY: activeSlide.imageY || 0,
+        imageRotation: activeSlide.imageRotation || 0,
       })
     }
   }, [activeSlide, form.reset])
@@ -257,6 +294,28 @@ export function EditingPanel({
             </Select>
           </div>
 
+          <div>
+            <Label className="text-lg font-semibold">Quantidade de Slides</Label>
+            <div className="flex items-center gap-2 mt-2">
+              <Input
+                type="number"
+                min="1"
+                max="10"
+                value={slideCount}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value)
+                  if (value >= 1 && value <= 10) {
+                    onSlideCountChange(value)
+                  }
+                }}
+                className="w-20"
+              />
+              <span className="text-sm text-muted-foreground">
+                (máximo 10 slides)
+              </span>
+            </div>
+          </div>
+
           <Separator />
 
           {activeSlide ? (
@@ -294,11 +353,11 @@ export function EditingPanel({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {fonts.map((font) => (
-                              <SelectItem key={font.value} value={font.value}>
-                                {font.name}
-                              </SelectItem>
-                            ))}
+                             {fonts.map((font) => (
+                               <SelectItem key={font.value} value={font.value} style={{ fontFamily: font.value }}>
+                                 {font.name}
+                               </SelectItem>
+                             ))}
                           </SelectContent>
                         </Select>
                       </FormItem>
@@ -411,22 +470,36 @@ export function EditingPanel({
                   render={({ field }) => (
                     <FormItem>
                       <div className="flex items-center justify-between">
-                        <FormLabel className="flex items-center text-lg">
-                          <ImageIcon className="mr-2 h-5 w-5" />
-                          Imagem de Fundo
-                        </FormLabel>
-                        <Dialog open={isImagePickerOpen} onOpenChange={setIsImagePickerOpen}>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Replace className="mr-2 h-4 w-4" />
-                              Trocar
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-3xl">
-                            <ImagePicker onImageSelect={handleImageSelect} />
+                      <FormLabel className="flex items-center text-lg">
+                      <ImageIcon className="mr-2 h-5 w-5" />
+                      Imagem de Fundo
+                      </FormLabel>
+                      <div className="flex gap-2">
+                      <Dialog open={isImagePickerOpen} onOpenChange={setIsImagePickerOpen}>
+                      <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Replace className="mr-2 h-4 w-4" />
+                          Trocar
+                          </Button>
+                        </DialogTrigger>
+                      <DialogContent className="max-w-3xl">
+                          <ImagePicker onImageSelect={handleImageSelect} />
                           </DialogContent>
-                        </Dialog>
-                      </div>
+                          </Dialog>
+                           <ImageUrlExtractor 
+                             onImagesExtracted={(images) => {
+                               // Add all extracted images to available slides
+                               const newSlides = [...slides];
+                               images.forEach((imageUrl, index) => {
+                                 if (index < newSlides.length) {
+                                   newSlides[index] = { ...newSlides[index], imageUrl };
+                                 }
+                               });
+                               onSlidesChange(newSlides);
+                             }}
+                           />
+                         </div>
+                       </div>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -434,6 +507,148 @@ export function EditingPanel({
                     </FormItem>
                   )}
                 />
+
+                <div className="space-y-4">
+                  <Label className="text-lg font-semibold">Manipulação da Imagem</Label>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="imageScale"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Escala</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Slider
+                                value={[field.value]}
+                                onValueChange={(value) => field.onChange(value[0])}
+                                min={0.1}
+                                max={5}
+                                step={0.1}
+                              />
+                              <div className="text-sm text-muted-foreground text-center">
+                                {field.value.toFixed(1)}x
+                              </div>
+                            </div>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="imageRotation"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Rotação</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Slider
+                                value={[field.value]}
+                                onValueChange={(value) => field.onChange(value[0])}
+                                min={-180}
+                                max={180}
+                                step={1}
+                              />
+                              <div className="text-sm text-muted-foreground text-center">
+                                {field.value}°
+                              </div>
+                            </div>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="imageX"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Posição X</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Slider
+                                value={[field.value]}
+                                onValueChange={(value) => field.onChange(value[0])}
+                                min={-200}
+                                max={200}
+                                step={1}
+                              />
+                              <div className="text-sm text-muted-foreground text-center">
+                                {field.value}px
+                              </div>
+                            </div>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="imageY"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Posição Y</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Slider
+                                value={[field.value]}
+                                onValueChange={(value) => field.onChange(value[0])}
+                                min={-200}
+                                max={200}
+                                step={1}
+                              />
+                              <div className="text-sm text-muted-foreground text-center">
+                                {field.value}px
+                              </div>
+                            </div>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        form.setValue("imageScale", 1)
+                        form.setValue("imageX", 0)
+                        form.setValue("imageY", 0)
+                        form.setValue("imageRotation", 0)
+                      }}
+                    >
+                      Resetar Posição
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const currentScale = form.getValues("imageScale")
+                        const currentX = form.getValues("imageX")
+                        const currentY = form.getValues("imageY")
+                        
+                        // Calcular snap-back para que a imagem fique dentro do container
+                        const maxOffset = 50 // Limite para snap-back
+                        const newX = Math.max(-maxOffset, Math.min(maxOffset, currentX))
+                        const newY = Math.max(-maxOffset, Math.min(maxOffset, currentY))
+                        const newScale = Math.max(0.8, Math.min(1.2, currentScale))
+                        
+                        form.setValue("imageX", newX)
+                        form.setValue("imageY", newY)
+                        form.setValue("imageScale", newScale)
+                      }}
+                    >
+                      Ajustar ao Container
+                    </Button>
+                  </div>
+                </div>
               </form>
             </Form>
           ) : (

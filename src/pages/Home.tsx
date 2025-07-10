@@ -20,9 +20,9 @@ import { generateCarouselContent } from "@/lib/ai"
 import { Slide, AspectRatio } from "@/types/slide"
 
 const formSchema = z.object({
-  companyInfo: z.string(),
   carouselTheme: z.string(),
   model: z.string(),
+  slideCount: z.coerce.number(),
 })
 
 export default function HomePage() {
@@ -31,6 +31,7 @@ export default function HomePage() {
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
   const [count, setCount] = useState(0)
+  const [slideCount, setSlideCount] = useState(5)
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>({
     label: "Quadrado (1:1)",
     value: 1 / 1,
@@ -53,12 +54,23 @@ export default function HomePage() {
   async function handleGenerate(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
     setSlides([])
+    setSlideCount(values.slideCount)
     toast.info(`Gerando seu carrossel com ${values.model}...`, {
       description: "A IA está criando o conteúdo e buscando as imagens. Isso pode levar um momento.",
     })
 
     try {
-      const generatedSlides = await generateCarouselContent(values.companyInfo, values.carouselTheme, values.model)
+      const generatedSlides = await generateCarouselContent(values.carouselTheme, values.model, values.slideCount)
+
+      // Calcular posição centralizada baseada no aspect ratio
+      const containerWidth = 800
+      const containerHeight = containerWidth / aspectRatio.value
+      const textWidth = 600
+      const textHeight = 100
+      
+      // Posicionar o texto no início do container
+      const textX = 0
+      const textY = (containerHeight - textHeight) / 2
 
       const slidesWithStyles: Slide[] = generatedSlides.map((slide) => ({
         ...slide,
@@ -67,9 +79,9 @@ export default function HomePage() {
         textAlign: "center",
         color: "#FFFFFF",
         backgroundColor: "#000000",
-        backgroundOpacity: 0.3,
-        position: { x: 60, y: 300 },
-        size: { width: 680, height: "auto" },
+        backgroundOpacity: 0.5,
+        position: { x: textX, y: textY },
+        size: { width: textWidth, height: textHeight },
       }))
 
       setSlides(slidesWithStyles)
@@ -90,10 +102,54 @@ export default function HomePage() {
     setSlides([])
     setCurrent(0)
     setCount(0)
+    setSlideCount(5)
   }
 
   const handleSlideUpdate = (slideId: number, newProps: Partial<Slide>) => {
     setSlides((prevSlides) => prevSlides.map((s) => (s.id === slideId ? { ...s, ...newProps } : s)))
+  }
+
+  const handleSlideCountChange = (newCount: number) => {
+    setSlideCount(newCount)
+    
+    if (newCount > slides.length) {
+      // Adicionar slides
+      const newSlides = [...slides]
+      const containerWidth = 800
+      const containerHeight = containerWidth / aspectRatio.value
+      const textWidth = 600
+      const textHeight = 100
+      const textX = 0
+      const textY = (containerHeight - textHeight) / 2
+
+      for (let i = slides.length; i < newCount; i++) {
+        newSlides.push({
+          id: i + 1,
+          text: `Slide ${i + 1}`,
+          imageUrl: "",
+          fontFamily: "Inter, sans-serif",
+          fontSize: 48,
+          textAlign: "center",
+          color: "#FFFFFF",
+          backgroundColor: "#000000",
+          backgroundOpacity: 0.5,
+          position: { x: textX, y: textY },
+          size: { width: textWidth, height: textHeight },
+          imageScale: 1,
+          imageX: 0,
+          imageY: 0,
+          imageRotation: 0,
+        })
+      }
+      setSlides(newSlides)
+    } else if (newCount < slides.length) {
+      // Remover slides
+      setSlides(slides.slice(0, newCount))
+      // Ajustar slide atual se necessário
+      if (current > newCount) {
+        setCurrent(newCount)
+      }
+    }
   }
 
   const slideRefs = useRef<React.RefObject<HTMLDivElement>[]>([])
@@ -120,6 +176,8 @@ export default function HomePage() {
                 aspectRatio={aspectRatio}
                 onAspectRatioChange={setAspectRatio}
                 slideRefs={slideRefs.current}
+                slideCount={slideCount}
+                onSlideCountChange={handleSlideCountChange}
               />
             )}
           </div>

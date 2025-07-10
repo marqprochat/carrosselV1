@@ -15,8 +15,8 @@ const aiSlideSchema = z.object({
   imageQuery: z.string(),
 });
 
-const aiResponseSchema = z.object({
-  slides: z.array(aiSlideSchema).min(5).max(5),
+const aiResponseSchema = (slideCount: number) => z.object({
+  slides: z.array(aiSlideSchema).min(slideCount).max(slideCount),
 });
 
 const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
@@ -122,33 +122,43 @@ function getApiConfig(
 }
 
 export async function generateCarouselContent(
-  companyInfo: string,
   carouselTheme: string,
-  model: string
+  model: string,
+  slideCount: number = 5
 ) {
   const prompt = `
-    Você é um especialista em marketing de mídia social. Com base nas seguintes informações sobre uma empresa e um tema desejado, gere o conteúdo para um carrossel de 5 slides para redes sociais.
-
-    Informações da Empresa:
-    "${companyInfo}"
+    Você é um especialista em marketing digital e criação de conteúdo para redes sociais. Sua missão é criar carrosséis altamente engajadores e otimizados para plataformas como Instagram, LinkedIn e Facebook.
 
     Tema do Carrossel:
     "${carouselTheme}"
 
-    Sua resposta DEVE ser um objeto JSON válido. O objeto JSON deve conter uma única chave "slides", que é um array de 5 objetos. Cada objeto no array deve ter duas propriedades:
-    1. "text": Um texto curto e envolvente para o slide (máximo de 150 caracteres).
-    2. "imageQuery": Uma consulta de pesquisa concisa de 2 a 3 palavras para uma imagem de fundo relevante para este slide.
+    INSTRUÇÕES ESPECÍFICAS:
+    1. O PRIMEIRO SLIDE deve SEMPRE ser uma CAPA atrativa que desperte curiosidade e faça as pessoas quererem deslizar para ver o resto do carrossel.
+    2. Use ganchos poderosos no primeiro slide: "Você sabia que...", "5 segredos para...", "A verdade sobre...", "Como eu descobri...", etc.
+    3. Para os SLIDES 2-${slideCount}, crie textos mais explicativos e detalhados que desenvolvam o conteúdo.
+    4. Use elementos visuais que chamem atenção (emojis quando relevantes).
+    5. Estruture o carrossel de forma lógica: Capa → Desenvolvimento → Conclusão/CTA.
+    6. Cada slide deve ter valor individual, mas formar uma narrativa coesa.
+    7. Use técnicas de copywriting para manter o interesse.
+
+    Sua resposta DEVE ser um objeto JSON válido. O objeto JSON deve conter uma única chave "slides", que é um array de ${slideCount} objetos. Cada objeto no array deve ter duas propriedades:
+    1. "text": Para o SLIDE 1 (capa): máximo de 80 caracteres. Para os SLIDES 2-${slideCount}: máximo de 300 caracteres com conteúdo explicativo e detalhado.
+    2. "imageQuery": Uma consulta de pesquisa concisa de 2 a 3 palavras em inglês para uma imagem de fundo relevante.
 
     Exemplo de formato de resposta:
     {
       "slides": [
         {
-          "text": "Este é o texto para o slide 1.",
-          "imageQuery": "reunião de negócios"
+          "text": "🚀 5 Segredos de Marketing Digital",
+          "imageQuery": "digital marketing"
         },
         {
-          "text": "Este é o texto para o slide 2.",
-          "imageQuery": "tecnologia inovadora"
+          "text": "Segredo #1: Conheça profundamente seu público-alvo. Use ferramentas como Google Analytics e redes sociais para entender comportamentos, interesses e dores. Crie personas detalhadas para direcionar melhor sua estratégia.",
+          "imageQuery": "target audience"
+        },
+        {
+          "text": "Segredo #2: Invista em conteúdo de valor. Eduque, entretenha e solucione problemas do seu público. Conteúdo relevante gera confiança, autoridade e relacionamento duradouro com potenciais clientes.",
+          "imageQuery": "content creation"
         }
       ]
     }
@@ -176,7 +186,7 @@ export async function generateCarouselContent(
     content = JSON.parse(json.choices[0].message.content);
   }
 
-  const parsedAiResponse = aiResponseSchema.safeParse(content);
+  const parsedAiResponse = aiResponseSchema(slideCount).safeParse(content);
 
   if (!parsedAiResponse.success) {
     console.error('Erro de validação Zod:', parsedAiResponse.error);

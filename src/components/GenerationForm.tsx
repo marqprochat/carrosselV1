@@ -3,11 +3,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Bot,
-  Building,
   Cpu,
   Loader2,
   Paintbrush,
   Sparkles,
+  Layers,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -28,28 +28,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
-  companyInfo: z
-    .string()
-    .min(10, {
-      message: 'A informação da empresa deve ter pelo menos 10 caracteres.',
-    })
-    .max(500, {
-      message: 'A informação da empresa não pode exceder 500 caracteres.',
-    }),
   carouselTheme: z
     .string()
-    .min(5, {
-      message: 'O tema do carrossel deve ter pelo menos 5 caracteres.',
+    .min(10, {
+      message: 'O tema do carrossel deve ter pelo menos 10 caracteres.',
     })
-    .max(100, {
-      message: 'O tema do carrossel não pode exceder 100 caracteres.',
+    .max(800, {
+      message: 'O tema do carrossel não pode exceder 800 caracteres.',
     }),
   model: z.string({
     required_error: 'Por favor, selecione um modelo de IA.',
   }),
+  slideCount: z.coerce.number().min(1, 'Mínimo 1 slide').max(10, 'Máximo 10 slides'),
 });
 
 interface GenerationFormProps {
@@ -61,8 +55,8 @@ export function GenerationForm({ isLoading, onSubmit }: GenerationFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      companyInfo: '',
       carouselTheme: '',
+      slideCount: 5,
     },
   });
 
@@ -76,30 +70,7 @@ export function GenerationForm({ isLoading, onSubmit }: GenerationFormProps) {
       <div className="flex-grow overflow-y-auto pr-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <FormField
-              control={form.control}
-              name="companyInfo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center text-lg">
-                    <Building className="mr-2 h-5 w-5" />
-                    Sobre sua Empresa
-                  </FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Descreva sua empresa, seus valores e o que a torna única..."
-                      className="resize-none"
-                      rows={8}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    A IA usará isso para personalizar o tom e a mensagem.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
             <FormField
               control={form.control}
               name="carouselTheme"
@@ -111,14 +82,39 @@ export function GenerationForm({ isLoading, onSubmit }: GenerationFormProps) {
                   </FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Ex: 'Lançamento de novo produto', 'Dicas de marketing digital', 'Benefícios do nosso serviço X'..."
+                      placeholder="Ex: 'Quero um carrossel sobre estratégias de marketing digital para pequenas empresas. Inclua dicas práticas, ferramentas gratuitas, métricas importantes e como começar do zero. Foque em resultados rápidos e acionáveis.'..."
                       className="resize-none"
-                      rows={4}
+                      rows={8}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Seja específico para obter os melhores resultados.
+                    Seja detalhado sobre o que quer no carrossel. Quanto mais específico, melhor será o resultado.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="slideCount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center text-lg">
+                    <Layers className="mr-2 h-5 w-5" />
+                    Quantidade de Slides
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="10"
+                      {...field}
+                      className="w-32"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Escolha quantos slides quer gerar (máximo 10).
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
