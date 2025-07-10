@@ -19,6 +19,7 @@ import {
 import { useEffect, useState } from "react"
 import html2canvas from "html2canvas"
 import JSZip from "jszip"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -483,21 +484,38 @@ export function EditingPanel({
                           </Button>
                         </DialogTrigger>
                       <DialogContent className="max-w-3xl">
-                          <ImagePicker onImageSelect={handleImageSelect} />
+                          <ImagePicker 
+                            onImageSelect={handleImageSelect} 
+                            currentSlide={currentSlideIndex}
+                            totalSlides={slides.length}
+                          />
                           </DialogContent>
                           </Dialog>
                            <ImageUrlExtractor 
-                             onImagesExtracted={(images) => {
-                               // Add all extracted images to available slides
-                               const newSlides = [...slides];
-                               images.forEach((imageUrl, index) => {
-                                 if (index < newSlides.length) {
-                                   newSlides[index] = { ...newSlides[index], imageUrl };
-                                 }
-                               });
+                           onImagesExtracted={(images) => {
+                           if (images.length === 1) {
+                           // Se apenas uma imagem, coloca no slide atual
+                           form.setValue("imageUrl", images[0], { shouldDirty: true, shouldValidate: true });
+                           } else {
+                             // Se múltiplas imagens, distribui a partir do slide atual
+                             const newSlides = [...slides];
+                           let imagesApplied = 0;
+                           images.forEach((imageUrl, index) => {
+                           const targetSlideIndex = currentSlideIndex + index;
+                           if (targetSlideIndex < newSlides.length) {
+                            newSlides[targetSlideIndex] = { ...newSlides[targetSlideIndex], imageUrl };
+                              imagesApplied++;
+                             }
+                             });
                                onSlidesChange(newSlides);
-                             }}
-                           />
+                                 
+                                  // Feedback ao usuário
+                                  if (imagesApplied < images.length) {
+                                    toast.warning(`${imagesApplied} de ${images.length} imagens aplicadas. Adicione mais slides para usar todas as imagens.`);
+                                  }
+                                }
+                              }}
+                            />
                          </div>
                        </div>
                       <FormControl>
